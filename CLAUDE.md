@@ -20,8 +20,10 @@ make pre-commit   # Manually run pre-commit hooks
 
 ### Testing
 ```bash
-make test         # Run pytest with coverage
-pytest tests/test_etl.py -v    # Run specific test module
+make test         # Run pytest with coverage (39 tests, 95% coverage)
+pytest tests/test_data_loader.py -v      # Test data loader module (15 tests)
+pytest tests/test_preprocessor.py -v     # Test preprocessor module (14 tests)  
+pytest tests/test_etl_pipeline.py -v     # Test ETL integration (10 tests)
 pytest -v --cov=krx_portfolio --cov-report=html  # Detailed coverage report
 ```
 
@@ -69,6 +71,11 @@ The project implements a complete financial data pipeline with four main compone
 - `Makefile`: Development workflow automation
 - Data caching in `data/cache/` with structured subdirectories (`raw/`, `processed/`, `features/`)
 
+### Known Issues & Workarounds
+- **FinanceDataReader**: Currently disabled in dependencies due to compatibility issues
+- **MyPy**: Requires `pip install pandas-stubs` for complete type checking
+- **Pre-commit**: Config file missing but hooks installed - use `PRE_COMMIT_ALLOW_NO_CONFIG=1` for git commits
+
 ### ETL Pipeline Details
 The ETL pipeline requires a `--data-root` parameter pointing to KRX JSON data location. It supports:
 - Date range filtering (`--start-date`, `--end-date`)
@@ -78,7 +85,14 @@ The ETL pipeline requires a `--data-root` parameter pointing to KRX JSON data lo
 
 ### Code Quality Standards
 - Black formatting (88 character line limit)
-- Ruff linting with import sorting
-- MyPy type checking (strict mode enabled)
+- Ruff linting with import sorting (updated to v0.12+ syntax)
+- MyPy type checking (strict mode enabled) - **Note**: pandas-stubs required for full type coverage
 - Pre-commit hooks for automated quality checks
 - Pytest with coverage reporting (target: krx_portfolio module)
+- Modern Python typing (dict/list instead of Dict/List)
+
+### Current Development Status
+- ✅ **ETL Pipeline**: 100% complete with 95% test coverage (39/39 tests passing)
+- ✅ **Code Quality**: Ruff/Black formatting applied across all modules
+- ⚠️ **Type Checking**: 55 MyPy errors remaining (mostly missing pandas-stubs and function annotations)
+- 🚧 **Next Phase**: Portfolio optimization and backtesting modules ready for development
