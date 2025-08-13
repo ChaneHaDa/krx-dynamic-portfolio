@@ -157,7 +157,7 @@ class KRXPreprocessor:
         for col in volume_cols:
             if col in df.columns:
                 df[col] = df[col].replace(0, np.nan)
-                df[col] = df.groupby('srtnCd')[col].fillna(method='ffill').fillna(method='bfill')
+                df[col] = df.groupby('srtnCd')[col].ffill().bfill()
         
         return df
     
