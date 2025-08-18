@@ -1,0 +1,165 @@
+# Portfolio Optimization Configuration
+# This file configures the portfolio optimization pipeline
+
+# Optimization Objective
+# Options: "max_sharpe", "min_variance", "mean_variance"
+objective: "max_sharpe"
+
+# Alternative parameters for mean_variance objective
+# risk_aversion: 0.5          # Risk aversion parameter λ ∈ [0, 1]
+# target_return: 0.08         # Target return constraint (alternative to risk_aversion)
+
+# Risk-free rate for Sharpe ratio calculation
+risk_free_rate: 0.0
+
+# Risk Model Configuration
+risk_model:
+  # Covariance estimation method
+  # Options: "sample", "ledoit_wolf", "oas", "ewma"
+  method: "ledoit_wolf"
+  
+  # EWMA parameters (only used when method = "ewma")
+  ewma_lambda: 0.94           # Decay parameter (closer to 1 = more recent weight)
+  
+  # Ridge regularization parameter (added to diagonal)
+  ridge: 1.0e-6
+  
+  # Minimum periods required for risk model fitting
+  min_periods: 252
+
+# Portfolio Constraints
+constraints:
+  # Long-only constraint
+  long_only: true
+  
+  # Individual asset weight bounds [min, max]
+  w_bounds: [0.0, 0.1]
+  
+  # Sector weight caps (optional)
+  sector_caps:
+    "IT": 0.35                # Information Technology
+    "Financials": 0.25        # Financial sector
+    "Materials": 0.20         # Materials/Chemicals
+    "Consumer": 0.20          # Consumer discretionary/staples
+    "Healthcare": 0.15        # Healthcare/Pharmaceuticals
+    "Others": 0.40            # All other sectors
+  
+  # Minimum number of positions in portfolio
+  min_positions: 15
+  
+  # Maximum number of positions (optional)
+  # max_positions: 50
+  
+  # Turnover constraints
+  turnover_budget: 0.25       # Monthly maximum turnover (fraction of portfolio)
+  turnover_penalty: "l1"      # Penalty type: "l1", "l2", or null
+
+# Rebalancing Configuration
+rebalance:
+  # Rebalancing schedule
+  # Options: "month_end", "quarter_end", "weekly", "daily"
+  schedule: "month_end"
+  
+  # Threshold-based rebalancing
+  threshold: 0.05             # L1 distance threshold to trigger rebalancing
+  
+  # Turnover budget for rebalancing
+  turnover_budget: 0.25       # Maximum monthly turnover
+  
+  # Transaction costs
+  tc_bps: 25                  # Round-trip transaction cost in basis points
+  
+  # Minimum trade size (fraction of portfolio)
+  min_trade_size: 0.001
+
+# Volatility Targeting (optional)
+vol_target:
+  enable: false               # Enable volatility targeting
+  annual_vol: 0.10           # Target annual volatility (10%)
+  lookback_window: 63        # Days for volatility estimation
+
+# Risk Budgeting (optional)
+risk_budgeting:
+  enable: false              # Enable equal risk contribution
+  target_budgets: null       # Custom risk budgets (null = equal budgets)
+
+# Factor Model (optional, for advanced risk modeling)
+factor_model:
+  enable: false
+  factors:
+    - "market"               # Market factor
+    - "size"                # Size factor  
+    - "value"               # Value factor
+  method: "ols"              # Estimation method: "ols", "ridge", "lasso"
+
+# Data and Caching
+data:
+  # Lookback window for risk model estimation (trading days)
+  lookback_window: 252
+  
+  # Minimum return threshold for asset inclusion
+  min_return_periods: 100
+  
+  # Cache optimization results
+  cache_results: true
+  
+  # Output directory for results
+  output_dir: "data/portfolios"
+
+# Logging Configuration
+logging:
+  level: "INFO"              # Log level: DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Advanced Options
+advanced:
+  # Solver options
+  solver:
+    name: "ECOS"             # Optimization solver
+    verbose: false
+    max_iters: 1000
+  
+  # Numerical stability
+  numerical:
+    psd_tolerance: 1e-8      # PSD tolerance for covariance matrix
+    weight_tolerance: 1e-6   # Tolerance for weight constraints
+    
+  # Performance optimization
+  performance:
+    parallel: false          # Use parallel processing where possible
+    n_jobs: -1              # Number of parallel jobs (-1 = all cores)
+
+# Backtesting Integration
+backtesting:
+  # Performance attribution
+  attribution:
+    enable: true
+    factors: ["market", "sector", "specific"]
+  
+  # Risk monitoring  
+  risk_monitoring:
+    enable: true
+    metrics: ["var", "cvar", "max_drawdown", "tracking_error"]
+    confidence_level: 0.05
+
+# Market-specific Settings for KRX
+krx_specific:
+  # Trading hours and holidays
+  market_open: "09:00"
+  market_close: "15:30"
+  
+  # Settlement and clearing
+  settlement_days: 2
+  
+  # Liquidity filters
+  liquidity:
+    min_market_cap: 1e9      # Minimum market cap (KRW)
+    min_avg_volume: 1e6      # Minimum average daily volume (KRW)
+    min_trading_days: 200    # Minimum trading days in lookback period
+  
+  # Sector classification (GICS or KRX standard)
+  sector_classification: "GICS"
+  
+  # Currency and locale
+  currency: "KRW"
+  locale: "ko_KR"
