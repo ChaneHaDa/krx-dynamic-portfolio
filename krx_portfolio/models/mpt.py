@@ -1,6 +1,6 @@
 """Modern Portfolio Theory (MPT) optimization module."""
 
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
@@ -10,9 +10,9 @@ class MPTOptimizer:
 
     def __init__(
         self,
-        bounds: Tuple[float, float] = (0.0, 0.1),
+        bounds: tuple[float, float] = (0.0, 0.1),
         rf: float = 0.0,
-        sector_caps: Optional[Dict[str, float]] = None,
+        sector_caps: Optional[dict[str, float]] = None,
         turnover_budget: Optional[float] = None,
         penalty: Optional[str] = None,
     ):
@@ -39,7 +39,7 @@ class MPTOptimizer:
         self.penalty = penalty
 
     def max_sharpe(
-        self, mu: np.ndarray, Sigma: np.ndarray, w_prev: Optional[np.ndarray] = None
+        self, mu: np.ndarray, sigma: np.ndarray, w_prev: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
         Maximize Sharpe ratio: argmax_w (μᵀw - rf) / sqrt(wᵀΣw).
@@ -48,7 +48,7 @@ class MPTOptimizer:
         ----------
         mu : np.ndarray
             Expected returns vector (N,)
-        Sigma : np.ndarray
+        sigma : np.ndarray
             Covariance matrix (N, N)
         w_prev : np.ndarray, optional
             Previous weights for turnover penalty
@@ -64,7 +64,7 @@ class MPTOptimizer:
         return self._apply_constraints(w, w_prev)
 
     def min_variance(
-        self, mu: np.ndarray, Sigma: np.ndarray, w_prev: Optional[np.ndarray] = None
+        self, mu: np.ndarray, sigma: np.ndarray, w_prev: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
         Minimize portfolio variance: argmin_w wᵀΣw.
@@ -73,7 +73,7 @@ class MPTOptimizer:
         ----------
         mu : np.ndarray
             Expected returns vector (N,)
-        Sigma : np.ndarray
+        sigma : np.ndarray
             Covariance matrix (N, N)
         w_prev : np.ndarray, optional
             Previous weights for turnover penalty
@@ -91,7 +91,7 @@ class MPTOptimizer:
     def mean_variance(
         self,
         mu: np.ndarray,
-        Sigma: np.ndarray,
+        sigma: np.ndarray,
         risk_aversion: Optional[float] = None,
         target_return: Optional[float] = None,
         w_prev: Optional[np.ndarray] = None,
@@ -103,7 +103,7 @@ class MPTOptimizer:
         ----------
         mu : np.ndarray
             Expected returns vector (N,)
-        Sigma : np.ndarray
+        sigma : np.ndarray
             Covariance matrix (N, N)
         risk_aversion : float, optional
             Risk aversion parameter λ ∈ [0, 1]
@@ -161,8 +161,8 @@ class MPTOptimizer:
         return w
 
     def _calculate_portfolio_stats(
-        self, w: np.ndarray, mu: np.ndarray, Sigma: np.ndarray
-    ) -> Dict[str, float]:
+        self, w: np.ndarray, mu: np.ndarray, sigma: np.ndarray
+    ) -> dict[str, float]:
         """
         Calculate portfolio statistics.
 
@@ -172,7 +172,7 @@ class MPTOptimizer:
             Portfolio weights
         mu : np.ndarray
             Expected returns
-        Sigma : np.ndarray
+        sigma : np.ndarray
             Covariance matrix
 
         Returns
@@ -181,7 +181,7 @@ class MPTOptimizer:
             Portfolio statistics (return, volatility, sharpe)
         """
         port_return = np.dot(w, mu)
-        port_vol = np.sqrt(np.dot(w, np.dot(Sigma, w)))
+        port_vol = np.sqrt(np.dot(w, np.dot(sigma, w)))
         sharpe = (port_return - self.rf) / port_vol if port_vol > 0 else 0.0
 
         return {"return": port_return, "volatility": port_vol, "sharpe": sharpe}

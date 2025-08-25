@@ -1,6 +1,6 @@
 """Risk modeling module for covariance estimation and portfolio risk management."""
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -193,7 +193,7 @@ class RiskModel:
 
     def risk_budget(
         self, weights: np.ndarray, risk_budgets: Optional[np.ndarray] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate risk budgeting metrics.
 
@@ -234,7 +234,7 @@ class RiskModel:
 
     def factor_exposure(
         self, factors: pd.DataFrame, method: str = "ols"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate factor exposures and specific risk.
 

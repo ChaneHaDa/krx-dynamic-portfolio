@@ -1,6 +1,6 @@
 """Dynamic portfolio rebalancing module."""
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -48,7 +48,7 @@ class Rebalancer:
         dates: pd.DatetimeIndex,
         start_date: Optional[pd.Timestamp] = None,
         end_date: Optional[pd.Timestamp] = None,
-    ) -> List[pd.Timestamp]:
+    ) -> list[pd.Timestamp]:
         """
         Generate rebalancing dates with business day adjustments.
 
@@ -93,7 +93,7 @@ class Rebalancer:
         w_target: np.ndarray,
         w_current: np.ndarray,
         date: pd.Timestamp,
-        rebalance_dates: List[pd.Timestamp],
+        rebalance_dates: list[pd.Timestamp],
     ) -> bool:
         """
         Determine if rebalancing should occur.
@@ -131,8 +131,8 @@ class Rebalancer:
         w_current: np.ndarray,
         prices: pd.Series,
         portfolio_value: float = 1.0,
-        asset_names: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        asset_names: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
         """
         Apply rebalancing with transaction cost optimization.
 
@@ -196,7 +196,7 @@ class Rebalancer:
 
     def _get_month_end_dates(
         self, dates: pd.DatetimeIndex, start_date: pd.Timestamp, end_date: pd.Timestamp
-    ) -> List[pd.Timestamp]:
+    ) -> list[pd.Timestamp]:
         """Get month-end business dates."""
         # Generate month ends
         monthly_dates = pd.date_range(
@@ -217,7 +217,7 @@ class Rebalancer:
 
     def _get_quarter_end_dates(
         self, dates: pd.DatetimeIndex, start_date: pd.Timestamp, end_date: pd.Timestamp
-    ) -> List[pd.Timestamp]:
+    ) -> list[pd.Timestamp]:
         """Get quarter-end business dates."""
         quarterly_dates = pd.date_range(
             start=start_date, end=end_date, freq="QE"  # Use QE instead of deprecated Q
@@ -235,7 +235,7 @@ class Rebalancer:
 
     def _get_weekly_dates(
         self, dates: pd.DatetimeIndex, start_date: pd.Timestamp, end_date: pd.Timestamp
-    ) -> List[pd.Timestamp]:
+    ) -> list[pd.Timestamp]:
         """Get weekly business dates (Fridays)."""
         weekly_dates = pd.date_range(start=start_date, end=end_date, freq="W-FRI")
 
@@ -314,7 +314,7 @@ class Rebalancer:
         w_diff: np.ndarray,
         prices: pd.Series,
         portfolio_value: float,
-        asset_names: List[str],
+        asset_names: list[str],
     ) -> pd.DataFrame:
         """Create detailed order information."""
         orders = []

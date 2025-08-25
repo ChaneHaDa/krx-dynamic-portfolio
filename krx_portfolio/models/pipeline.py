@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -22,7 +22,7 @@ class PortfolioOptimizationPipeline:
     def __init__(
         self,
         config_path: Optional[Union[str, Path]] = None,
-        config: Optional[Dict] = None,
+        config: Optional[dict] = None,
     ):
         """
         Initialize optimization pipeline.
@@ -56,11 +56,11 @@ class PortfolioOptimizationPipeline:
         self,
         mu: np.ndarray,
         returns: pd.DataFrame,
-        sector_map: Optional[Dict[str, str]] = None,
+        sector_map: Optional[dict[str, str]] = None,
         prices: Optional[pd.Series] = None,
         current_weights: Optional[np.ndarray] = None,
         date: Optional[pd.Timestamp] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build portfolio weights through complete optimization pipeline.
 
@@ -165,7 +165,7 @@ class PortfolioOptimizationPipeline:
         self,
         returns: pd.DataFrame,
         expected_returns: pd.DataFrame,
-        rebalance_dates: Optional[List[pd.Timestamp]] = None,
+        rebalance_dates: Optional[list[pd.Timestamp]] = None,
         initial_weights: Optional[np.ndarray] = None,
         prices: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
@@ -233,7 +233,7 @@ class PortfolioOptimizationPipeline:
         return pd.DataFrame(weight_series).fillna(0)
 
     def save_results(
-        self, results: Dict[str, Any], output_path: Union[str, Path]
+        self, results: dict[str, Any], output_path: Union[str, Path]
     ) -> None:
         """Save optimization results to files."""
         output_path = Path(output_path)
@@ -299,7 +299,7 @@ class PortfolioOptimizationPipeline:
 
     def _calculate_risk_metrics(
         self, weights: np.ndarray, mu: np.ndarray, cov_matrix: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate portfolio risk metrics."""
         portfolio_return = np.dot(weights, mu)
         portfolio_vol = np.sqrt(np.dot(weights, np.dot(cov_matrix, weights)))
@@ -317,8 +317,8 @@ class PortfolioOptimizationPipeline:
         }
 
     def _analyze_sector_weights(
-        self, weights: np.ndarray, sector_map: Dict[str, str], asset_names: pd.Index
-    ) -> Dict[str, float]:
+        self, weights: np.ndarray, sector_map: dict[str, str], asset_names: pd.Index
+    ) -> dict[str, float]:
         """Analyze sector weight distribution."""
         sector_weights = {}
         for asset, weight in zip(asset_names, weights):
@@ -327,7 +327,7 @@ class PortfolioOptimizationPipeline:
 
         return sector_weights
 
-    def _log_optimization_summary(self, results: Dict[str, Any]) -> None:
+    def _log_optimization_summary(self, results: dict[str, Any]) -> None:
         """Log optimization summary."""
         logger.info("Portfolio optimization completed:")
         logger.info(f"  Objective: {self.config['objective']}")
@@ -345,7 +345,7 @@ class PortfolioOptimizationPipeline:
             logger.info(f"  Turnover: {results.get('turnover', 0.0):.4f}")
             logger.info(f"  Transaction cost: {results.get('tc_cost', 0.0):.4f}")
 
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self) -> dict[str, Any]:
         """Get default configuration."""
         return {
             "objective": "max_sharpe",
@@ -371,9 +371,9 @@ class PortfolioOptimizationPipeline:
 def build_weights(
     mu: np.ndarray,
     returns: pd.DataFrame,
-    sector_map: Optional[Dict[str, str]] = None,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    sector_map: Optional[dict[str, str]] = None,
+    config: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
     """
     Convenience function for single-shot portfolio optimization.
 
@@ -400,7 +400,7 @@ def build_weights(
 def create_monthly_weights(
     returns_data: pd.DataFrame,
     expected_returns: pd.DataFrame,
-    config: Optional[Dict[str, Any]] = None,
+    config: Optional[dict[str, Any]] = None,
     output_dir: Optional[Union[str, Path]] = None,
 ) -> pd.DataFrame:
     """

@@ -19,9 +19,9 @@ class TestMPTOptimizer:
         # Generate sample returns
         returns = np.random.normal(0.001, 0.02, (n_periods, n_assets))
         mu = np.mean(returns, axis=0)
-        Sigma = np.cov(returns.T)
+        sigma = np.cov(returns.T)
 
-        return {"returns": returns, "mu": mu, "Sigma": Sigma, "n_assets": n_assets}
+        return {"returns": returns, "mu": mu, "Sigma": sigma, "n_assets": n_assets}
 
     @pytest.fixture
     def optimizer(self):
@@ -113,11 +113,11 @@ class TestMPTOptimizer:
         """Test effect of turnover penalty."""
         w_prev = np.array([0.3, 0.2, 0.2, 0.2, 0.1])  # Previous weights
 
-        # Optimizer without turnover penalty
-        opt_no_penalty = MPTOptimizer()
-        w_no_penalty = opt_no_penalty.max_sharpe(
-            sample_data["mu"], sample_data["Sigma"]
-        )
+        # Optimizer without turnover penalty (placeholder for future comparison)
+        # opt_no_penalty = MPTOptimizer()
+        # w_no_penalty = opt_no_penalty.max_sharpe(
+        #     sample_data["mu"], sample_data["Sigma"]
+        # )
 
         # Optimizer with turnover penalty (when implemented)
         opt_with_penalty = MPTOptimizer(penalty="l1", turnover_budget=0.1)
@@ -127,7 +127,6 @@ class TestMPTOptimizer:
 
         # With penalty, weights should be closer to previous weights
         # (This test will pass when turnover penalty is implemented)
-        turnover_no_penalty = np.sum(np.abs(w_no_penalty - w_prev))
         turnover_with_penalty = np.sum(np.abs(w_with_penalty - w_prev))
 
         # For now, both should be equal since penalty is not implemented
@@ -137,10 +136,10 @@ class TestMPTOptimizer:
     def test_edge_case_single_asset(self):
         """Test optimization with single asset."""
         mu = np.array([0.08])
-        Sigma = np.array([[0.16]])
+        sigma = np.array([[0.16]])
 
         optimizer = MPTOptimizer()
-        weights = optimizer.max_sharpe(mu, Sigma)
+        weights = optimizer.max_sharpe(mu, sigma)
 
         assert len(weights) == 1
         assert abs(weights[0] - 1.0) < 1e-6
