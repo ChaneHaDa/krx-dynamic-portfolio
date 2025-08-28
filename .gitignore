@@ -143,3 +143,5 @@ data/
 # Temporary files
 tmp/
 temp/
+test_env/
+test_verification*.py

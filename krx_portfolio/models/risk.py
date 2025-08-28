@@ -149,14 +149,25 @@ class RiskModel:
 
     def _ewma_cov(self, returns: pd.DataFrame) -> np.ndarray:
         """Compute Exponentially Weighted Moving Average covariance matrix."""
-        # TODO: Implement EWMA covariance estimation
-        # For now, use pandas ewm as placeholder
-        return (
-            returns.ewm(alpha=1 - self.ewma_lambda)
-            .cov()
-            .iloc[-len(returns.columns) :]
-            .values
-        )
+        T, N = returns.shape
+        returns_array = returns.values
+        
+        # Initialize with first observation
+        cov_matrix = np.outer(returns_array[0], returns_array[0])
+        
+        # Exponentially weighted covariance update
+        for t in range(1, T):
+            r_t = returns_array[t]
+            cov_matrix = (
+                self.ewma_lambda * cov_matrix + 
+                (1 - self.ewma_lambda) * np.outer(r_t, r_t)
+            )
+        
+        # Bias correction (similar to pandas ewm)
+        sum_weights = (1 - self.ewma_lambda ** T) / (1 - self.ewma_lambda)
+        cov_matrix = cov_matrix / (sum_weights / T)
+        
+        return cov_matrix
 
     def _regularize_cov(self, cov_matrix: np.ndarray) -> np.ndarray:
         """Apply ridge regularization to covariance matrix."""
@@ -250,11 +261,74 @@ class RiskModel:
         dict
             Factor model results
         """
-        # TODO: Implement factor model estimation
-        # Placeholder for factor analysis
+        if not self._fitted:
+            raise ValueError("Model must be fitted first")
+        
+        # Align dates between returns and factors
+        common_dates = self._returns.index.intersection(factors.index)
+        if len(common_dates) == 0:
+            raise ValueError("No common dates between returns and factors")
+        
+        returns_aligned = self._returns.loc[common_dates]
+        factors_aligned = factors.loc[common_dates]
+        
+        n_assets = returns_aligned.shape[1]
+        n_factors = factors_aligned.shape[1]
+        
+        # Add intercept
+        X = np.column_stack([np.ones(len(factors_aligned)), factors_aligned.values])
+        Y = returns_aligned.values
+        
+        if method == "ols":
+            # Ordinary Least Squares
+            try:
+                beta = np.linalg.solve(X.T @ X, X.T @ Y)
+            except np.linalg.LinAlgError:
+                # Use pseudo-inverse if singular
+                beta = np.linalg.pinv(X) @ Y
+        elif method == "ridge":
+            # Ridge regression with small regularization
+            ridge_param = 1e-4
+            XTX_ridge = X.T @ X + ridge_param * np.eye(X.shape[1])
+            beta = np.linalg.solve(XTX_ridge, X.T @ Y)
+        else:
+            raise ValueError(f"Unknown method: {method}. Use 'ols' or 'ridge'")
+        
+        # Extract intercepts and factor loadings
+        intercepts = beta[0, :]
+        factor_loadings = beta[1:, :].T  # (n_assets, n_factors)
+        
+        # Calculate residuals and specific risk
+        Y_pred = X @ beta
+        residuals = Y - Y_pred
+        specific_var = np.var(residuals, axis=0, ddof=X.shape[1])
+        specific_risk = np.sqrt(specific_var)
+        
+        # Factor covariance matrix
+        factor_cov = np.cov(factors_aligned.T)
+        
+        # R-squared calculation
+        tss = np.sum((Y - np.mean(Y, axis=0)) ** 2, axis=0)
+        rss = np.sum(residuals ** 2, axis=0)
+        r_squared = 1 - rss / np.maximum(tss, 1e-10)
+        
         return {
-            "factor_loadings": None,
-            "specific_risk": None,
-            "factor_cov": None,
-            "r_squared": None,
+            "factor_loadings": pd.DataFrame(
+                factor_loadings,
+                index=returns_aligned.columns,
+                columns=factors_aligned.columns
+            ),
+            "intercepts": pd.Series(intercepts, index=returns_aligned.columns),
+            "specific_risk": pd.Series(specific_risk, index=returns_aligned.columns),
+            "factor_cov": pd.DataFrame(
+                factor_cov,
+                index=factors_aligned.columns,
+                columns=factors_aligned.columns
+            ),
+            "r_squared": pd.Series(r_squared, index=returns_aligned.columns),
+            "residuals": pd.DataFrame(
+                residuals,
+                index=common_dates,
+                columns=returns_aligned.columns
+            )
         }
