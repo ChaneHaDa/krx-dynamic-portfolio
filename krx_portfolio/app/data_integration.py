@@ -14,7 +14,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-@st.cache_data(ttl=3600)  # 1시간 캐시
+@st.cache_data(ttl=1800, max_entries=50, show_spinner=False)  # 30분 캐시, 최대 50개 엔트리
 def fetch_real_time_data(symbols: List[str], period: str = "1y") -> pd.DataFrame:
     """
     yfinance를 사용하여 실시간 주식 데이터 수집
@@ -47,7 +47,7 @@ def fetch_real_time_data(symbols: List[str], period: str = "1y") -> pd.DataFrame
         return pd.DataFrame()
 
 
-@st.cache_data(ttl=900)  # 15분 캐시
+@st.cache_data(ttl=300, max_entries=20, show_spinner=False)  # 5분 캐시, 실시간 가격용
 def get_current_prices(symbols: List[str]) -> pd.Series:
     """
     현재 주식 가격 조회
@@ -191,6 +191,7 @@ def get_market_indices(period: str = "1y") -> pd.DataFrame:
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=7200, max_entries=10)  # 2시간 캐시, 샘플 데이터용
 def create_sample_portfolio_data(n_assets: int = 20) -> Dict[str, Any]:
     """
     샘플 포트폴리오 데이터 생성 (실제 데이터가 없을 때 사용)
@@ -284,6 +285,7 @@ def validate_symbols(symbols: List[str]) -> Tuple[List[str], List[str]]:
     return valid_symbols, invalid_symbols
 
 
+@st.cache_data(ttl=60, max_entries=5, show_spinner=False)  # 1분 캐시, 시장 상태용
 def get_real_time_market_status() -> Dict[str, Any]:
     """
     실시간 시장 현황 조회

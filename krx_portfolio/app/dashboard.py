@@ -18,18 +18,32 @@ import sys
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from krx_portfolio.models.pipeline import PortfolioOptimizationPipeline
-from krx_portfolio.backtesting.main import BacktestPipeline
-from krx_portfolio.etl.main import run_etl_pipeline
 from krx_portfolio.app.data_integration import (
     create_sample_portfolio_data,
     get_real_time_market_status,
     fetch_real_time_data
 )
-from krx_portfolio.utils import load_config
+from krx_portfolio.app.backend_integration import (
+    get_backend_integration,
+    run_etl_pipeline_safe,
+    run_portfolio_optimization_safe,
+    run_backtesting_safe
+)
+from krx_portfolio.app.performance_optimizations import (
+    CacheManager,
+    StreamlitOptimizer,
+    DataSampler,
+    PerformanceProfiler,
+    get_profiler,
+    monitor_memory
+)
+from krx_portfolio.app.chart_optimizations import (
+    ChartOptimizer,
+    ChartCache,
+    optimize_plotly_config,
+    create_performance_dashboard
+)
 import yaml
-import subprocess
-import tempfile
 
 
 def main():
@@ -49,7 +63,8 @@ def main():
         "📈 포트폴리오 최적화": show_optimization_page,
         "📊 백테스팅": show_backtesting_page,
         "⚠️ 리스크 분석": show_risk_analytics_page,
-        "📋 데이터 관리": show_data_management_page
+        "📋 데이터 관리": show_data_management_page,
+        "⚡ 성능 모니터링": show_performance_page
     }
     
     selected_page = st.sidebar.selectbox("페이지 선택", list(pages.keys()))
@@ -506,6 +521,186 @@ def show_data_management_page():
     
     if st.button("🗑️ 캐시 삭제"):
         st.warning("캐시가 삭제되었습니다. 다음 실행 시 전체 데이터가 다시 로드됩니다.")
+
+
+def show_performance_page():
+    """성능 모니터링 페이지"""
+    st.title("⚡ 성능 모니터링")
+    st.markdown("---")
+    
+    # 시스템 정보
+    st.subheader("🖥️ 시스템 정보")
+    
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        cpu_percent = psutil.cpu_percent(interval=1)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("메모리 사용률", f"{memory.percent:.1f}%", 
+                     f"{memory.used / 1024**3:.1f} GB")
+        
+        with col2:
+            st.metric("CPU 사용률", f"{cpu_percent:.1f}%")
+        
+        with col3:
+            st.metric("사용 가능 메모리", f"{memory.available / 1024**3:.1f} GB")
+        
+        with col4:
+            st.metric("총 메모리", f"{memory.total / 1024**3:.1f} GB")
+    
+    except ImportError:
+        st.warning("성능 모니터링을 위해 psutil 패키지가 필요합니다.")
+        # 기본 정보 표시
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("활성 세션", "1")
+        with col2:
+            st.metric("캐시된 데이터", f"{len(st.session_state)}")
+        with col3:
+            st.metric("성능 모드", "최적화됨")
+    
+    # 캐시 관리
+    st.subheader("🗄️ 캐시 관리")
+    
+    cache_info = CacheManager.get_cache_info()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.json(cache_info)
+    
+    with col2:
+        if st.button("🗑️ 모든 캐시 클리어", type="primary"):
+            success, message = CacheManager.clear_all_caches()
+            if success:
+                st.success(message)
+                st.rerun()
+            else:
+                st.error(message)
+        
+        if st.button("📊 캐시 정보 새로고침"):
+            st.rerun()
+    
+    # 차트 성능 설정
+    st.subheader("📈 차트 최적화")
+    
+    # 성능 대시보드 생성
+    perf_settings = create_performance_dashboard()
+    
+    # 성능 프로파일링
+    st.subheader("🔍 성능 프로파일링")
+    
+    profiler = get_profiler()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🚀 프로파일링 시작"):
+            profiler.start()
+            st.success("프로파일링이 시작되었습니다.")
+    
+    with col2:
+        if st.button("📊 프로파일 리포트"):
+            profiler.display_report()
+    
+    # 메모리 사용량 최적화 팁
+    st.subheader("💡 최적화 팁")
+    
+    with st.expander("성능 최적화 가이드"):
+        st.markdown("""
+        ### 🚀 대시보드 성능 최적화 방법
+        
+        #### 1. 데이터 크기 관리
+        - 1,000개 이상 종목 → 샘플링 적용
+        - 5년 이상 데이터 → 최근 데이터 우선 표시
+        - 복잡한 차트 → 데이터 포인트 제한
+        
+        #### 2. 캐시 활용
+        - 자주 사용하는 데이터 캐싱
+        - 15분-1시간 TTL 설정
+        - 정기적인 캐시 클리어
+        
+        #### 3. 차트 최적화
+        - 1,000개 이상 포인트 → 선 차트만 사용
+        - 애니메이션 비활성화
+        - 불필요한 툴바 제거
+        
+        #### 4. 메모리 관리
+        - 대용량 데이터 청크 처리
+        - 사용하지 않는 변수 정리
+        - 가비지 컬렉션 정기 실행
+        """)
+    
+    # 성능 테스트
+    st.subheader("🧪 성능 테스트")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        test_size = st.selectbox("테스트 데이터 크기", [100, 1000, 5000, 10000])
+        
+        if st.button("📊 차트 렌더링 테스트"):
+            with st.spinner("차트 렌더링 테스트 중..."):
+                import time
+                start_time = time.time()
+                
+                # 테스트 데이터 생성
+                dates = pd.date_range('2020-01-01', periods=test_size, freq='D')
+                test_data = pd.DataFrame({
+                    'date': dates,
+                    'value': np.random.randn(test_size).cumsum()
+                })
+                
+                # 차트 생성
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=test_data['date'], 
+                    y=test_data['value'], 
+                    mode='lines'
+                ))
+                
+                # 최적화 적용
+                fig = ChartOptimizer.optimize_line_chart(fig, max_points=1000)
+                
+                end_time = time.time()
+                render_time = end_time - start_time
+                
+                st.plotly_chart(fig, use_container_width=True, 
+                               config=optimize_plotly_config())
+                
+                st.success(f"렌더링 완료: {render_time:.2f}초")
+    
+    with col2:
+        if st.button("💾 메모리 사용량 테스트"):
+            with st.spinner("메모리 테스트 중..."):
+                try:
+                    import psutil
+                    process = psutil.Process()
+                    memory_before = process.memory_info().rss / 1024 / 1024
+                    
+                    # 대용량 데이터 생성
+                    large_data = pd.DataFrame(
+                        np.random.randn(10000, 50), 
+                        columns=[f'col_{i}' for i in range(50)]
+                    )
+                    
+                    memory_after = process.memory_info().rss / 1024 / 1024
+                    memory_diff = memory_after - memory_before
+                    
+                    st.success(f"메모리 사용량: {memory_diff:.1f} MB")
+                    
+                    # 메모리 정리
+                    del large_data
+                    import gc
+                    gc.collect()
+                    
+                except ImportError:
+                    st.info("메모리 테스트를 위해 psutil 패키지가 필요합니다.")
+                except Exception as e:
+                    st.error(f"메모리 테스트 실패: {e}")
 
 
 def run_etl_pipeline_wrapper(data_root: str, force_reload: bool = False) -> tuple[bool, str]:
