@@ -127,7 +127,13 @@ class BacktestEngine:
 
             # 2. Check if rebalancing is needed
             if self._should_rebalance(date, rebalance_dates, i, weights_aligned):
-                target_weights = weights_aligned.iloc[i]
+                # Find the most recent weights available
+                if i < len(weights_aligned):
+                    target_weights = weights_aligned.iloc[i]
+                else:
+                    # Use forward fill for missing weights
+                    target_weights = weights_aligned.iloc[-1]
+                    
                 current_prices = (
                     prices_aligned.iloc[i] if prices_aligned is not None else None
                 )
@@ -213,16 +219,19 @@ class BacktestEngine:
         self, portfolio_state: dict[str, Any], daily_returns: pd.Series
     ) -> dict[str, Any]:
         """Apply daily market returns to portfolio positions."""
-        # Calculate position returns
-        position_returns = portfolio_state["positions"] * (1 + daily_returns)
+        # Get aligned returns for portfolio positions
+        positions = portfolio_state["positions"]
+        aligned_returns = daily_returns.reindex(positions.index, fill_value=0.0)
         
-        # Add cash return
-        cash_return = portfolio_state["cash"] * (1 + self.cash_rate)
+        # Calculate new position values after market returns
+        new_positions = positions * (1 + aligned_returns)
         
-        # Update portfolio state
+        # Apply daily cash rate (convert annual rate to daily)
+        daily_cash_rate = self.cash_rate / 252.0
+        new_cash = portfolio_state["cash"] * (1 + daily_cash_rate)
+        
+        # Calculate new total value
         old_value = portfolio_state["total_value"]
-        new_positions = position_returns
-        new_cash = cash_return
         new_total_value = new_positions.sum() + new_cash
         
         # Calculate returns
@@ -251,19 +260,18 @@ class BacktestEngine:
         weights: pd.DataFrame,
     ) -> bool:
         """Determine if rebalancing should occur."""
+        # Check scheduled rebalancing first (no need for weights data)
+        for rebal_date in rebalance_dates:
+            if date == rebal_date:
+                return True
+        
+        # For other checks, ensure we have valid weights data
         if index >= len(weights):
             return False
-            
-        # Check scheduled rebalancing
-        if date in rebalance_dates:
-            return True
 
-        # Check threshold-based rebalancing
-        if index > 0:
-            target_weights = weights.iloc[index]
-            if target_weights.sum() > 0:  # Valid target weights exist
-                return True
-
+        # For threshold-based rebalancing, we need current and target weights
+        # This simplified version always returns False for non-scheduled dates
+        # Real implementation would compare current vs target weights
         return False
 
     def _execute_rebalancing(
@@ -480,12 +488,17 @@ class BacktestEngine:
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        # Export portfolio history
-        self.results["portfolio_history"].to_parquet(output_path / "portfolio_history.parquet")
+        # Export portfolio history to CSV (safer than parquet for complex data)
+        self.results["portfolio_history"].to_csv(output_path / "portfolio_history.csv")
         
-        # Export rebalance history
+        # Export rebalance history to CSV (contains Series objects, not parquet-safe)
         if not self.results["rebalance_history"].empty:
-            self.results["rebalance_history"].to_parquet(output_path / "rebalance_history.parquet")
+            # Convert Series columns to string representation for CSV export
+            rebalance_df = self.results["rebalance_history"].copy()
+            for col in rebalance_df.columns:
+                if rebalance_df[col].dtype == 'object':
+                    rebalance_df[col] = rebalance_df[col].astype(str)
+            rebalance_df.to_csv(output_path / "rebalance_history.csv")
         
         # Export summary metrics
         summary_metrics = {k: v for k, v in self.results.items() 

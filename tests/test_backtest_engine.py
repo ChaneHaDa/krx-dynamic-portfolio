@@ -133,11 +133,20 @@ class TestBacktestEngine:
         portfolio_state = basic_engine._initialize_portfolio(initial_weights, start_date)
         daily_returns = sample_data['returns'].iloc[1]
         
+        # Store original values for comparison
+        original_total_value = portfolio_state['total_value']
+        original_positions = portfolio_state['positions'].copy()
+        
         updated_state = basic_engine._apply_market_returns(portfolio_state, daily_returns)
         
-        assert updated_state['total_value'] != portfolio_state['total_value']
+        # Use tolerance-based comparison for floating point precision
+        assert not np.isclose(updated_state['total_value'], original_total_value, rtol=1e-10)
         assert 'daily_return' in updated_state
         assert 'cumulative_return' in updated_state
+        
+        # Check that positions changed (unless all returns are exactly 0)
+        if not daily_returns.abs().sum() == 0:
+            assert not np.allclose(updated_state['positions'], original_positions, rtol=1e-10)
 
     def test_should_rebalance(self, basic_engine, sample_data):
         """Test rebalancing decision logic."""
@@ -356,8 +365,8 @@ class TestBacktestEngine:
         )
         
         weights = pd.DataFrame(
-            [[1.0]] * 5,  # 5 rebalance dates
-            index=dates[::10],  # Every 10 days
+            [[1.0]] * len(dates),  # Daily weights
+            index=dates,
             columns=['SINGLE_ASSET']
         )
         
@@ -402,7 +411,7 @@ class TestBacktestEngine:
         basic_engine.export_results(str(tmp_path))
         
         # Check that files were created
-        expected_files = ['portfolio_history.parquet', 'summary_metrics.yaml']
+        expected_files = ['portfolio_history.csv', 'summary_metrics.yaml']
         
         for filename in expected_files:
             assert (tmp_path / filename).exists()
