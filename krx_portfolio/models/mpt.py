@@ -61,7 +61,7 @@ class MPTOptimizer:
         """
         n_assets = len(mu)
         
-        def neg_sharpe(w):
+        def neg_sharpe(w: np.ndarray) -> float:
             """Negative Sharpe ratio (for minimization)."""
             portfolio_return = np.dot(w, mu)
             portfolio_vol = np.sqrt(np.dot(w, np.dot(sigma, w)))

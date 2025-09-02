@@ -4,7 +4,7 @@
 
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 
 def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
@@ -21,14 +21,17 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     Dict[str, Any]
         설정 딕셔너리
     """
+    config_file_path: Union[str, Path]
     if config_path is None:
         # 기본 설정 파일 경로
-        config_path = Path(__file__).parent.parent / "configs" / "portfolio.yaml"
+        config_file_path = Path(__file__).parent.parent / "configs" / "portfolio.yaml"
+    else:
+        config_file_path = config_path
     
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_file_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-        return config
+        return config if config is not None else {}
     except FileNotFoundError:
         # 기본 설정 반환
         return get_default_config()

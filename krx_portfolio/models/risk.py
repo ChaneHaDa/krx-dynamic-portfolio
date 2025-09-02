@@ -5,7 +5,7 @@ from typing import Any, Literal, Optional
 import numpy as np
 import pandas as pd
 from scipy.linalg import eigvalsh
-from sklearn.covariance import OAS, LedoitWolf
+from sklearn.covariance import OAS, LedoitWolf  # type: ignore[import-untyped]
 
 
 class RiskModel:
@@ -46,8 +46,8 @@ class RiskModel:
         self.min_periods = min_periods
 
         # Will be set after fitting
-        self._cov_matrix = None
-        self._returns = None
+        self._cov_matrix: Optional[np.ndarray] = None
+        self._returns: Optional[pd.DataFrame] = None
         self._fitted = False
 
     def fit(self, returns: pd.DataFrame) -> "RiskModel":
@@ -98,7 +98,7 @@ class RiskModel:
         np.ndarray
             Covariance matrix (N, N)
         """
-        if not self._fitted:
+        if not self._fitted or self._cov_matrix is None:
             raise ValueError("Model must be fitted first")
         return self._cov_matrix.copy()
 
@@ -111,7 +111,7 @@ class RiskModel:
         np.ndarray
             Correlation matrix (N, N)
         """
-        if not self._fitted:
+        if not self._fitted or self._cov_matrix is None:
             raise ValueError("Model must be fitted first")
 
         std = np.sqrt(np.diag(self._cov_matrix))
@@ -126,7 +126,7 @@ class RiskModel:
         pd.Series
             Asset volatilities
         """
-        if not self._fitted:
+        if not self._fitted or self._cov_matrix is None or self._returns is None:
             raise ValueError("Model must be fitted first")
 
         return pd.Series(
@@ -261,7 +261,7 @@ class RiskModel:
         dict
             Factor model results
         """
-        if not self._fitted:
+        if not self._fitted or self._returns is None:
             raise ValueError("Model must be fitted first")
         
         # Align dates between returns and factors
